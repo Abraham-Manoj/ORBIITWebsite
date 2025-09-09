@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORBIIT 3D Animation</title>
+    <style>
+        /* ===== FONT IMPORT ===== */
+        
+        
+        /* ===== GLOBAL RESET & BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: white;
+            font-family: proxima-nova-hangeul, Arial, sans-serif;
+            overflow: hidden; /* Prevents scrollbars */
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* ===== MAIN CONTAINER WITH 3D PERSPECTIVE ===== */
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            perspective: 1000px; /* Enables 3D transforms for child elements */
+            overflow: hidden;
+        }
+        
+        /* ===== ORBIIT TEXT CONTAINER ===== */
+        .orbiit-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Centers the container */
+            width: min(600px, 90vw); /* Responsive sizing with maximum and viewport-based fallback */
+            height: min(300px, 45vw);
+        }
+        
+        /* ===== MAIN ORBIIT TEXT STYLING ===== */
+        .orbiit {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: clamp(40px, 8vw, 80px); /* Responsive font size: min, preferred, max */
+            font-weight: 700;
+            color: transparent; /* Makes text hollow on desktop */
+            -webkit-text-stroke: clamp(2px, 0.4vw, 3px) #333; /* Creates outlined text effect on desktop */
+            letter-spacing: clamp(4px, 1vw, 8px); /* Responsive letter spacing */
+            z-index: 10; /* Ensures text appears above stars */
+        }
+        
+        /* ===== 3D ORBIT SYSTEM CONTAINER ===== */
+        .orbit-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotateX(75deg); /* Tilts the orbit to create 3D perspective */
+            width: min(450px, 80vw);
+            height: min(450px, 80vw);
+            animation: wobble 8s ease-in-out infinite; /* Adds natural wobble motion */
+            transform-style: preserve-3d; /* Maintains 3D transforms for child elements */
+        }
+        
+        /* ===== CIRCULAR ORBIT PATH ===== */
+        .orbit-path {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border: clamp(2px, 0.4vw, 3px) solid #333;
+            border-radius: 50%; /* Creates perfect circle */
+            opacity: 0.6; /* Semi-transparent to avoid overpowering the design */
+            animation: ring-rotate 6s linear infinite; /* Rotates the ring continuously */
+        }
+        
+        /* ===== 3D SPHERE THAT ORBITS ===== */
+        .orbit-sphere {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: clamp(30px, 5vw, 40px);
+            height: clamp(30px, 5vw, 40px);
+            animation: sphere-orbit 6s linear infinite; /* Moves sphere around the orbit path */
+            transform-origin: 0 0; /* Sets rotation point for orbital motion */
+            transform-style: preserve-3d; /* Enables 3D transforms for sphere circles */
+            z-index: 15; /* Appears above text and stars */
+        }
+        
+        /* ===== INDIVIDUAL CIRCLES THAT FORM THE 3D SPHERE ===== */
+        .sphere-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            border: clamp(2px, 0.4vw, 3px) solid #333;
+            border-radius: 50%;
+            background: transparent;
+        }
+        
+        /* Horizontal circle (lies flat) */
+        .sphere-circle.horizontal {
+            transform: translate(-50%, -50%) rotateX(0deg);
+        }
+        
+        /* Vertical circle (stands upright, perpendicular to horizontal) */
+        .sphere-circle.vertical {
+            transform: translate(-50%, -50%) rotateX(90deg);
+        }
+        
+        /* ===== BACKGROUND STARS STYLING ===== */
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Base star styling */
+        .star {
+            position: absolute;
+            width: clamp(8px, 1.5vw, 12px); /* Responsive star size */
+            height: clamp(8px, 1.5vw, 12px);
+            border: clamp(1px, 0.3vw, 2px) solid #000;
+            border-radius: 50%; /* Makes them circular */
+            background: transparent; /* Hollow stars */
+            animation: float 4s ease-in-out infinite; /* Gentle floating animation */
+        }
+        
+        /* Smaller variant of stars for visual variety */
+        .star.small {
+            width: clamp(6px, 1vw, 8px);
+            height: clamp(6px, 1vw, 8px);
+            border: clamp(1px, 0.2vw, 1px) solid #000;
+        }
+        
+        /* ===== STAR POSITIONING - Random distribution around orbit ===== */
+        .star:nth-child(1) { top: 22%; left: 48%; animation-delay: 0s; z-index: 1; }
+        .star:nth-child(2) { top: 38%; left: 78%; animation-delay: 1.3s; z-index: 2; }
+        .star:nth-child(3) { top: 55%; left: 88%; animation-delay: 2.1s; z-index: 1; }
+        .star:nth-child(4) { top: 68%; left: 72%; animation-delay: 0.7s; z-index: 2; }
+        .star:nth-child(5) { top: 78%; left: 45%; animation-delay: 3.4s; z-index: 1; }
+        .star:nth-child(6) { top: 62%; left: 18%; animation-delay: 1.8s; z-index: 2; }
+        .star:nth-child(7) { top: 46%; left: 12%; animation-delay: 2.9s; z-index: 1; }
+        .star:nth-child(8) { top: 28%; left: 32%; animation-delay: 0.3s; z-index: 2; }
+        .star:nth-child(9) { top: 35%; left: 62%; animation-delay: 1.6s; z-index: 1; }
+        .star:nth-child(10) { top: 72%; left: 58%; animation-delay: 2.5s; z-index: 2; }
+        .star:nth-child(11) { top: 65%; left: 38%; animation-delay: 3.7s; z-index: 1; }
+        .star:nth-child(12) { top: 25%; left: 82%; animation-delay: 0.9s; z-index: 2; }
+        
+        /* ===== ANIMATIONS ===== */
+        
+        /* Rotates the orbit ring continuously */
+        @keyframes ring-rotate {
+            0% {
+                transform: translate(-50%, -50%) rotateZ(0deg);
+            }
+            100% {
+                transform: translate(-50%, -50%) rotateZ(360deg);
+            }
+        }
+        
+        /* Moves sphere around orbit path with wobble effect */
+        @keyframes sphere-orbit {
+            0% {
+                transform: translate(-50%, -50%) rotate(0deg) translateX(225px) rotateX(-75deg) rotateY(0deg) rotateZ(0deg);
+            }
+            25% {
+                transform: translate(-50%, -50%) rotate(90deg) translateX(225px) rotateX(-78deg) rotateY(-2deg) rotateZ(0deg);
+            }
+            50% {
+                transform: translate(-50%, -50%) rotate(180deg) translateX(225px) rotateX(-72deg) rotateY(1deg) rotateZ(0deg);
+            }
+            75% {
+                transform: translate(-50%, -50%) rotate(270deg) translateX(225px) rotateX(-76deg) rotateY(-1deg) rotateZ(0deg);
+            }
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg) translateX(225px) rotateX(-75deg) rotateY(0deg) rotateZ(0deg);
+            }
+        }
+        
+        /* Creates natural wobble motion for the orbit container */
+        @keyframes wobble {
+            0%, 100% {
+                transform: translate(-50%, -50%) rotateX(75deg) rotateY(0deg);
+            }
+            25% {
+                transform: translate(-50%, -50%) rotateX(78deg) rotateY(2deg);
+            }
+            50% {
+                transform: translate(-50%, -50%) rotateX(72deg) rotateY(-1deg);
+            }
+            75% {
+                transform: translate(-50%, -50%) rotateX(76deg) rotateY(1deg);
+            }
+        }
+        
+        /* Gentle floating animation for stars */
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px) scale(1);
+                opacity: 0.7;
+            }
+            50% {
+                transform: translateY(-10px) scale(1.1);
+                opacity: 1;
+            }
+        }
+        
+        /* ===== BROWSER COMPATIBILITY FALLBACKS ===== */
+        /* Clean fallback for browsers that don't support text-stroke */
+        .orbiit {
+            /* Text-shadow fallback for older browsers */
+            text-shadow: 
+                -2px -2px 0 #333,
+                2px -2px 0 #333,
+                -2px 2px 0 #333,
+                2px 2px 0 #333;
+        }
+        
+        /* HYBRID APPROACH: Filled text on mobile, outlined on desktop */
+        @media (max-width: 768px) {
+            .orbiit {
+                /* Switch to filled text on mobile for better readability */
+                color: #333 !important; /* Solid dark color */
+                -webkit-text-stroke: none; /* Remove stroke */
+                text-shadow: none; /* Remove shadow */
+                font-weight: 900; /* Extra bold for impact */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Background star field -->
+        <div class="stars">
+            <!-- 12 stars with mix of regular and small sizes -->
+            <div class="star small"></div>
+            <div class="star"></div>
+            <div class="star small"></div>
+            <div class="star"></div>
+            <div class="star small"></div>
+            <div class="star"></div>
+            <div class="star small"></div>
+            <div class="star"></div>
+            <div class="star small"></div>
+            <div class="star"></div>
+            <div class="star small"></div>
+            <div class="star"></div>
+        </div>
+        
+        <!-- Main ORBIIT text and 3D orbital system -->
+        <div class="orbiit-container">
+            <!-- The main ORBIIT text -->
+            <div class="orbiit">ORBIIT</div>
+            
+            <!-- 3D orbital system container -->
+            <div class="orbit-container">
+                <!-- Circular orbit path/ring -->
+                <div class="orbit-path"></div>
+                
+                <!-- 3D sphere made of two perpendicular circles -->
+                <div class="orbit-sphere">
+                    <div class="sphere-circle horizontal"></div> <!-- Flat circle -->
+                    <div class="sphere-circle vertical"></div>   <!-- Upright circle -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript for enhanced interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            const stars = document.querySelectorAll('.star');
+            
+            // Add slight random positioning to stars for more organic feel
+            stars.forEach((star, index) => {
+                // Generate random offset values (-10 to +10 pixels)
+                const randomX = Math.random() * 20 - 10;
+                const randomY = Math.random() * 20 - 10;
+                
+                // Apply random positioning with staggered timing
+                setTimeout(() => {
+                    star.style.transform = `translate(${randomX}px, ${randomY}px)`;
+                }, index * 100); // Each star gets positioned 100ms after the previous
+            });
+            
+            // Add subtle parallax effect on mouse movement
+            document.addEventListener('mousemove', function(e) {
+                // Convert mouse position to values between -0.5 and 0.5
+                const mouseX = (e.clientX / window.innerWidth) - 0.5;
+                const mouseY = (e.clientY / window.innerHeight) - 0.5;
+                
+                // Apply subtle movement to the main ORBIIT container
+                const orbiitContainer = document.querySelector('.orbiit-container');
+                orbiitContainer.style.transform = `translate(-50%, -50%) 
+                    translateX(${mouseX * 20}px) 
+                    translateY(${mouseY * 20}px)`;
+                
+                // Apply parallax effect to stars with different speeds
+                stars.forEach((star, index) => {
+                    const speed = (index + 1) * 0.5; // Each star moves at different speed
+                    star.style.transform += ` 
+                        translateX(${mouseX * speed}px) 
+                        translateY(${mouseY * speed}px)`;
+                });
+            });
+        });
+    </script>
+</body>
+</html>

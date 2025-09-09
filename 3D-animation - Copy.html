@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORBIIT 3D Animation</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: white;
+            font-family: proxima-nova-hangeul, Arial, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            perspective: 1000px;
+            overflow: hidden;
+        }
+        
+        .orbiit-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(600px, 90vw);
+            height: min(300px, 45vw);
+        }
+        
+        .rbiit {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: clamp(40px, 8vw, 80px);
+            font-weight: 700;
+            color: transparent;
+            -webkit-text-stroke: clamp(2px, 0.4vw, 3px) #333;
+            text-stroke: clamp(2px, 0.4vw, 3px) #333;
+            letter-spacing: clamp(4px, 1vw, 8px);
+            z-index: 10;
+        }
+        
+        .orbit-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotateX(75deg);
+            width: min(450px, 80vw);
+            height: min(450px, 80vw);
+            animation: wobble 8s ease-in-out infinite;
+            transform-style: preserve-3d;
+        }
+        
+        .orbit-path {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border: clamp(2px, 0.4vw, 3px) solid #333;
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: ring-rotate 6s linear infinite;
+        }
+        
+        .orbit-sphere {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: clamp(30px, 5vw, 40px);
+            height: clamp(30px, 5vw, 40px);
+            animation: sphere-orbit 6s linear infinite;
+            transform-origin: 0 0;
+            transform-style: preserve-3d;
+            z-index: 15;
+        }
+        
+        .sphere-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            border: clamp(2px, 0.4vw, 3px) solid #333;
+            border-radius: 50%;
+            background: transparent;
+        }
+        
+        .sphere-circle.horizontal {
+            transform: translate(-50%, -50%) rotateX(0deg);
+        }
+        
+        .sphere-circle.vertical {
+            transform: translate(-50%, -50%) rotateX(90deg);
+        }
+        
+        .o-letter {
+            position: absolute;
+            top: 50%;
+            left: 12%;
+            transform: translate(-50%, -50%);
+            font-size: clamp(40px, 8vw, 80px);
+            font-weight: 700;
+            color: transparent;
+            -webkit-text-stroke: clamp(2px, 0.4vw, 3px) #333;
+            text-stroke: clamp(2px, 0.4vw, 3px) #333;
+            z-index: 10;
+        }
+        
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .star {
+            position: absolute;
+            width: clamp(8px, 1.5vw, 12px);
+            height: clamp(8px, 1.5vw, 12px);
+            border: clamp(1px, 0.3vw, 2px) solid #000;
+            border-radius: 50%;
+            background: transparent;
+            animation: float 4s ease-in-out infinite;
+        }
+        
+        .star.small {
+            width: clamp(6px, 1vw, 8px);
+            height: clamp(6px, 1vw, 8px);
+            border: clamp(1px, 0.2vw, 1px) solid #000;
+        }
+        
+        /* Random distribution with varying distances */
+        .star:nth-child(1) { top: 22%; left: 48%; animation-delay: 0s; z-index: 1; }
+        .star:nth-child(2) { top: 38%; left: 78%; animation-delay: 1.3s; z-index: 2; }
+        .star:nth-child(3) { top: 55%; left: 88%; animation-delay: 2.1s; z-index: 1; }
+        .star:nth-child(4) { top: 68%; left: 72%; animation-delay: 0.7s; z-index: 2; }
+        .star:nth-child(5) { top: 78%; left: 45%; animation-delay: 3.4s; z-index: 1; }
+        .star:nth-child(6) { top: 62%; left: 18%; animation-delay: 1.8s; z-index: 2; }
+        .star:nth-child(7) { top: 46%; left: 12%; animation-delay: 2.9s; z-index: 1; }
+        .star:nth-child(8) { top: 28%; left: 32%; animation-delay: 0.3s; z-index: 2; }
+        .star:nth-child(9) { top: 35%; left: 62%; animation-delay: 1.6s; z-index: 1; }
+        .star:nth-child(10) { top: 72%; left: 58%; animation-delay: 2.5s; z-index: 2; }
+        .star:nth-child(11) { top: 65%; left: 38%; animation-delay: 3.7s; z-index: 1; }
+        .star:nth-child(12) { top: 25%; left: 82%; animation-delay: 0.9s; z-index: 2; }
+        
+        @keyframes ring-rotate {
+            0% {
+                transform: translate(-50%, -50%) rotateZ(0deg);
+            }
+            100% {
+                transform: translate(-50%, -50%) rotateZ(360deg);
+            }
+        }
+        
+        @keyframes sphere-orbit {
+            0% {
+                transform: translate(-50%, -50%) rotate(0deg) translateX(225px) rotateX(-75deg) rotateY(0deg) rotateZ(0deg);
+            }
+            25% {
+                transform: translate(-50%, -50%) rotate(90deg) translateX(225px) rotateX(-78deg) rotateY(-2deg) rotateZ(0deg);
+            }
+            50% {
+                transform: translate(-50%, -50%) rotate(180deg) translateX(225px) rotateX(-72deg) rotateY(1deg) rotateZ(0deg);
+            }
+            75% {
+                transform: translate(-50%, -50%) rotate(270deg) translateX(225px) rotateX(-76deg) rotateY(-1deg) rotateZ(0deg);
+            }
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg) translateX(225px) rotateX(-75deg) rotateY(0deg) rotateZ(0deg);
+            }
+        }
+        
+        @keyframes wobble {
+            0%, 100% {
+                transform: translate(-50%, -50%) rotateX(75deg) rotateY(0deg);
+            }
+            25% {
+                transform: translate(-50%, -50%) rotateX(78deg) rotateY(2deg);
+            }
+            50% {
+                transform: translate(-50%, -50%) rotateX(72deg) rotateY(-1deg);
+            }
+            75% {
+                transform: translate(-50%, -50%) rotateX(76deg) rotateY(1deg);
+            }
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px) scale(1);
+                opacity: 0.7;
+            }
+            50% {
+                transform: translateY(-10px) scale(1.1);
+                opacity: 1;
+            }
+        }
+        
+        /* Fallback for browsers that don't support text-stroke */
+        .rbiit, .o-letter {
+            text-shadow: 
+                -3px -3px 0 #333,
+                3px -3px 0 #333,
+                -3px 3px 0 #333,
+                3px 3px 0 #333,
+                -3px 0px 0 #333,
+                3px 0px 0 #333,
+                0px -3px 0 #333,
+                0px 3px 0 #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="stars">
+            <!-- Uniformly distributed around orbit -->
+            <div class="star small"></div>
+            <div class="star"></div>
+            <div class="star small"></div>
+            <div class="star"></div>
+            <div class="star small"></div>
+            <div class="star"></div>
+            <div class="star small"></div>
+            <div class="star"></div>
+            <div class="star small"></div>
+            <div class="star"></div>
+            <div class="star small"></div>
+            <div class="star"></div>
+        </div>
+        
+        <div class="orbiit-container">
+            <div class="rbiit">ORBIIT</div>
+            <div class="orbit-container">
+                <div class="orbit-path"></div>
+                <div class="orbit-sphere">
+                    <div class="sphere-circle horizontal"></div>
+                    <div class="sphere-circle vertical"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add some dynamic behavior to the stars
+        document.addEventListener('DOMContentLoaded', function() {
+            const stars = document.querySelectorAll('.star');
+            
+            stars.forEach((star, index) => {
+                // Randomize star positions slightly
+                const randomX = Math.random() * 20 - 10;
+                const randomY = Math.random() * 20 - 10;
+                
+                setTimeout(() => {
+                    star.style.transform = `translate(${randomX}px, ${randomY}px)`;
+                }, index * 100);
+            });
+            
+            // Add mouse interaction for subtle parallax effect
+            document.addEventListener('mousemove', function(e) {
+                const mouseX = (e.clientX / window.innerWidth) - 0.5;
+                const mouseY = (e.clientY / window.innerHeight) - 0.5;
+                
+                const orbiitContainer = document.querySelector('.orbiit-container');
+                orbiitContainer.style.transform = `translate(-50%, -50%) 
+                    translateX(${mouseX * 20}px) 
+                    translateY(${mouseY * 20}px)`;
+                
+                stars.forEach((star, index) => {
+                    const speed = (index + 1) * 0.5;
+                    star.style.transform += ` 
+                        translateX(${mouseX * speed}px) 
+                        translateY(${mouseY * speed}px)`;
+                });
+            });
+        });
+    </script>
+</body>
+</html>
