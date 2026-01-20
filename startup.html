@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css" type="text/css">
+    <!-- SheetJS for Excel processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         .cms-section {
             padding: 80px 20px;
@@ -264,7 +266,8 @@
 
             <div id="error-message">
                 <i class="fas fa-exclamation-triangle fa-2x"></i>
-                <p id="error-text">Unable to connect to Airtable. Please check your Base ID and Token.</p>
+                <p id="error-text">Unable to load startup data from the Excel file. Please ensure startups.xlsx exists
+                    in the website directory.</p>
                 <div style="margin-top: 15px;">
                     <a href="index.html#startups" class="btn btn-outline"
                         style="padding: 10px 20px; font-size: 0.8rem;">View Offline Version</a>
@@ -296,132 +299,73 @@
 
     <script src="config.js"></script>
     <script>
-        // Configuration Variables
-        let AIRTABLE_TOKEN = '';
-        let BASE_ID = '';
-        let STARTUPS_TABLE_ID = '';
-        let CONTENT_TABLE_ID = '';
-
-        async function loadConfig() {
-            // First check if CONFIG exists from config.js
-            if (typeof CONFIG !== 'undefined') {
-                AIRTABLE_TOKEN = CONFIG.AIRTABLE_TOKEN;
-                BASE_ID = CONFIG.BASE_ID;
-                STARTUPS_TABLE_ID = CONFIG.STARTUPS_TABLE_ID;
-                CONTENT_TABLE_ID = CONFIG.CONTENT_TABLE_ID;
-                if (AIRTABLE_TOKEN && BASE_ID) return;
-            }
-
-            try {
-                // Secondary fallback: Try fetching .env file (works on some local servers)
-                const response = await fetch('.env');
-                if (!response.ok) throw new Error('.env file not found or inaccessible');
-                const text = await response.text();
-
-                const lines = text.split('\n');
-                const config = {};
-                lines.forEach(line => {
-                    const parts = line.split('=');
-                    if (parts.length >= 2) {
-                        const key = parts[0].trim();
-                        const value = parts.slice(1).join('=').trim();
-                        config[key] = value;
-                    }
-                });
-
-                AIRTABLE_TOKEN = config.AIRTABLE_TOKEN;
-                BASE_ID = config.AIRTABLE_BASE_ID;
-                STARTUPS_TABLE_ID = config.AIRTABLE_STARTUPS_TABLE_ID;
-                CONTENT_TABLE_ID = config.AIRTABLE_CONTENT_TABLE_ID;
-            } catch (err) {
-                console.warn('Config Error:', err);
-                if (!AIRTABLE_TOKEN || !BASE_ID) {
-                    throw new Error('Configuration not found. Please ensure config.js exists or .env is accessible.');
-                }
-            }
-        }
-
         async function fetchCMSData() {
             const loading = document.getElementById('loading');
             const errorDiv = document.getElementById('error-message');
             const errorText = document.getElementById('error-text');
 
             try {
-                // Ensure config is loaded first
-                await loadConfig();
+                // Fetch the Excel file
+                const response = await fetch('startups.xlsx');
+                if (!response.ok) throw new Error('Excel file not found or inaccessible (startups.xlsx)');
 
-                // Fetch both tables in parallel
-                const [startupsResponse, contentResponse] = await Promise.all([
-                    fetch(`https://api.airtable.com/v0/${BASE_ID}/${STARTUPS_TABLE_ID}`, {
-                        headers: { 'Authorization': `Bearer ${AIRTABLE_TOKEN}` }
-                    }),
-                    fetch(`https://api.airtable.com/v0/${BASE_ID}/${CONTENT_TABLE_ID}`, {
-                        headers: { 'Authorization': `Bearer ${AIRTABLE_TOKEN}` }
-                    })
-                ]);
+                const arrayBuffer = await response.arrayBuffer();
+                const data = new Uint8Array(arrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
 
-                if (!startupsResponse.ok || !contentResponse.ok) {
-                    throw new Error(`Failed to fetch data from Airtable. Status: ${startupsResponse.status}/${contentResponse.status}`);
-                }
+                // Get the first sheet
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
 
-                const startupsData = await startupsResponse.json();
-                const contentData = await contentResponse.json();
+                // Convert to JSON
+                const records = XLSX.utils.sheet_to_json(worksheet);
 
                 loading.style.display = 'none';
 
-                // 1. Update Hero Content from "Content Items" table
-                if (contentData.records && contentData.records.length > 0) {
-                    updatePageContent(contentData.records);
-                }
-
-                // 2. Render Startup Cards from "Startups" table
-                if (startupsData.records && startupsData.records.length > 0) {
-                    renderCards(startupsData.records);
+                if (records && records.length > 0) {
+                    renderCards(records);
                 } else {
                     errorDiv.style.display = 'block';
-                    errorText.textContent = 'No startup records found.';
+                    errorText.textContent = 'No startup records found in the Excel file.';
                 }
 
             } catch (err) {
-                console.error('Airtable Error:', err);
+                console.error('Excel Error:', err);
                 loading.style.display = 'none';
                 errorDiv.style.display = 'block';
                 errorText.textContent = 'Error: ' + err.message;
             }
         }
 
-        function updatePageContent(records) {
-            // Logic disabled to keep headings blank as requested
-        }
-
         function renderCards(records) {
             const container = document.getElementById('startup-container');
             container.innerHTML = '';
 
-            records.forEach((record, index) => {
-                const fields = record.fields;
-
-                // Aggressive field mapping to handle Airtable's specific naming
-                const name = fields['START UP NAME'] || fields['Name'] || fields['StartupName'] || fields['Title'] || fields['NAME'] || 'Untitled Startup';
+            records.forEach((fields, index) => {
+                // Mapping fields from the Excel sheet
+                const name = fields['START UP NAME'] || fields['Name'] || fields['StartupName'] || fields['Title'] || fields['NAME'];
 
                 // Skip header rows or placeholder entries
-                if (name === 'START UP NAME' || name === 'Untitled Startup' || !name) return;
+                if (!name || name === 'START UP NAME' || name === 'Untitled Startup') return;
 
-                const description = fields['Body'] || fields['Description'] || fields['Bio'] || fields['Summary'] || fields['Summary (AI)']?.value || '';
-                const tag = fields['DOMAIN'] || fields['Industry'] || fields['Category'] || fields['Content Category (AI)']?.value || fields['Type'] || 'Innovation';
+                const description = fields['Body'] || fields['Description'] || fields['Bio'] || fields['Summary'] || fields['Summary (AI)'] || '';
+                const tag = fields['DOMAIN'] || fields['Industry'] || fields['Category'] || fields['Type'] || 'Innovation';
                 const website = fields['Website'] || fields['Link'] || '#';
 
                 const card = document.createElement('div');
                 card.className = 'startup-card animate__animated animate__fadeInUp';
                 card.style.animationDelay = `${index * 0.1}s`;
 
+                // Stringify the record for the showDetails function, escaping quotes
+                const recordStr = JSON.stringify(fields).replace(/'/g, "&apos;").replace(/"/g, '&quot;');
+
                 card.innerHTML = `
                     <div class="startup-tag">${tag}</div>
                     <h3>${name}</h3>
                     <p class="startup-desc">${description}</p>
                     <div style="display:flex; gap:15px; margin-top:15px; flex-wrap:wrap;">
-                        <button class="btn btn-primary" style="padding: 10px 20px; font-size: 0.8rem;" onclick='showDetails(${JSON.stringify(record).replace(/'/g, "&apos;")})'>Details</button>
-                        ${website !== '#' ? `<a href="${website}" target="_blank" class="startup-link" style="margin-top:5px;">Website <i class="fas fa-external-link-alt"></i></a>` : ''}
+                        <button class="btn btn-primary" style="padding: 10px 20px; font-size: 0.8rem;" onclick='showDetails(${recordStr})'>Details</button>
+                        ${(website && website !== '#') ? `<a href="${website}" target="_blank" class="startup-link" style="margin-top:5px;">Website <i class="fas fa-external-link-alt"></i></a>` : ''}
                     </div>
                 `;
 
@@ -429,35 +373,34 @@
             });
         }
 
-        function showDetails(record) {
-            const f = record.fields;
+        function showDetails(fields) {
             const modal = document.getElementById('startup-modal');
             const body = document.getElementById('modal-body');
 
-            const name = f['START UP NAME'] || f['Name'] || 'Startup Details';
+            const name = fields['START UP NAME'] || fields['Name'] || 'Startup Details';
 
             body.innerHTML = `
                 <h2 style="font-size: 2rem; font-weight: 900; color: #333; text-transform: uppercase;">${name}</h2>
                 <div class="modal-details">
                     <div class="detail-item">
                         <span class="detail-label">Domain / Industry</span>
-                        <span class="detail-value">${f['DOMAIN'] || 'Innovation'}</span>
+                        <span class="detail-value">${fields['DOMAIN'] || 'Innovation'}</span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Founder(s)</span>
-                        <span class="detail-value">${f['FOUNDER(s)'] || 'Information not available'}</span>
+                        <span class="detail-value">${fields['FOUNDER(s)'] || 'Information not available'}</span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Incubation Start Date</span>
-                        <span class="detail-value">${f['INCUBATION START DATE'] || 'Pending'}</span>
+                        <span class="detail-value">${fields['INCUBATION START DATE'] || 'Pending'}</span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Current Status</span>
-                        <span class="detail-value" style="color:${(f['CURRENT STATUS'] || '').includes('ACTIVE') ? '#0a0' : '#333'}">${f['CURRENT STATUS'] || 'Active'}</span>
+                        <span class="detail-value" style="color:${(fields['CURRENT STATUS'] || '').includes('ACTIVE') ? '#0a0' : '#333'}">${fields['CURRENT STATUS'] || 'Active'}</span>
                     </div>
                     <div class="detail-item" style="border:none;">
                         <span class="detail-label">Team Members</span>
-                        <span class="detail-value">${f['TEAM MEMBERS'] || 'N/A'}</span>
+                        <span class="detail-value">${fields['TEAM MEMBERS'] || 'N/A'}</span>
                     </div>
                 </div>
             `;
