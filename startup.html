@@ -335,7 +335,7 @@
     <main>
         <section class="cms-hero">
             <div class="cms-header animate__animated animate__fadeIn">
-                <h1 class="cms-title">Our Incubated Startups</h1>
+                <h1 class="cms-title">Our Incubated Startups <span style="font-size: 0.8rem; vertical-align: middle; opacity: 0.5;">v1.2</span></h1>
 
             </div>
         </section>
@@ -465,8 +465,8 @@
                 // Mapping fields with even more fallbacks
                 const name = fields['START UP NAME'] || fields['Name'] || fields['StartupName'] || fields['Title'] || fields['NAME'] || fields['Startup'] || fields['startup'] || fields['Company'] || fields['COMPANY'];
                 
-                // Debug log to see what's being processed
-                if (index < 5) console.log('Processing startup:', name, fields);
+                // Debug log to see exactly what's being processed
+                console.log(`[CMS Debug] Row ${index + 1}:`, name, fields);
 
                 // Skip header rows or placeholder entries
                 if (!name || name === 'START UP NAME' || name === 'Untitled Startup') return;
