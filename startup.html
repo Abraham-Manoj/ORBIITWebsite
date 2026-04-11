@@ -249,6 +249,62 @@
             font-size: 1.1rem;
             color: #333;
         }
+
+        /* Status coloring */
+        .startup-card.status-active {
+            border-color: #28a745 !important;
+            background: rgba(40, 167, 69, 0.12) !important;
+        }
+
+        .startup-card.status-active:hover {
+            background: rgba(40, 167, 69, 0.2) !important;
+        }
+
+        .startup-card.status-exited {
+            border-color: #dc3545 !important;
+            background: rgba(220, 53, 69, 0.12) !important;
+        }
+
+        .startup-card.status-exited:hover {
+            background: rgba(220, 53, 69, 0.2) !important;
+        }
+
+        .status-legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0 40px;
+            padding: 15px;
+            background: #fff;
+            border: 2px solid #333;
+            max-width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            color: #333;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #333;
+        }
+
+        .legend-box.active {
+            background-color: #28a745;
+        }
+
+        .legend-box.exited {
+            background-color: #dc3545;
+        }
     </style>
 </head>
 
@@ -292,8 +348,7 @@
 
             <div id="error-message">
                 <i class="fas fa-exclamation-triangle fa-2x"></i>
-                <p id="error-text">Unable to load startup data from the Excel file. Please ensure startups.xlsx exists
-                    in the website directory.</p>
+                <p id="error-text">Unable to load startup data from Google Sheets. Please ensure the spreadsheet is published to the web and accessible.</p>
                 <div style="margin-top: 15px;">
                     <a href="index.html#startups" class="btn btn-outline"
                         style="padding: 10px 20px; font-size: 0.8rem;">View Offline Version</a>
@@ -359,16 +414,23 @@
             const errorText = document.getElementById('error-text');
 
             // Google Sheet CSV Export URL
-            const sheetId = '1_lr38OyIVaXesezefRhtMBDyrsPT8Vi7uB57Y168E_s';
-            const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
+            const sheetId = '1LQt6eUoQlvi81rGR6aixkgkSlksnXEuF';
+            const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=483231807`;
 
             try {
                 // Fetch the Google Sheet data as CSV
-                // Use a timestamp to prevent caching and ensure real-time updates
                 const response = await fetch(`${sheetUrl}&t=${new Date().getTime()}`);
-                if (!response.ok) throw new Error('Could not connect to Google Sheets. Ensure the sheet is published to the web.');
+                
+                if (!response.ok) {
+                    throw new Error('Access Denied. See instructions below.');
+                }
 
                 const csvData = await response.text();
+                
+                // If Google redirects to a sign-in page, we'll get HTML instead of CSV
+                if (csvData.trim().startsWith('<!DOCTYPE html>')) {
+                    throw new Error('Spreadsheet is PRIVATE. Please set sharing to "Anyone with the link can view" or use "Publish to Web".');
+                }
 
                 // Parse CSV using SheetJS
                 const workbook = XLSX.read(csvData, { type: 'string' });
@@ -384,14 +446,14 @@
                     renderCards(records);
                 } else {
                     errorDiv.style.display = 'block';
-                    errorText.textContent = 'No startup records found in the Google Sheet.';
+                    errorText.textContent = 'The Google Sheet is connected, but no startup records were found.';
                 }
 
             } catch (err) {
                 console.error('CMS Error:', err);
                 loading.style.display = 'none';
                 errorDiv.style.display = 'block';
-                errorText.textContent = 'Error connecting to live data: ' + err.message;
+                errorText.textContent = 'Connection Error: ' + err.message;
             }
         }
 
@@ -413,7 +475,7 @@
                 const card = document.createElement('div');
                 card.className = 'startup-card animate__animated animate__fadeInUp';
                 // Add status class
-                const status = (fields['CURRENT STATUS'] || '').toUpperCase();
+                const status = (fields['CURRENT STATUS'] || fields['Status'] || fields['STATUS'] || fields['Current Status'] || '').toUpperCase();
                 if (status.includes('ACTIVE')) {
                     card.classList.add('status-active');
                 } else if (status.includes('EXITED')) {
@@ -428,6 +490,10 @@
                     <div class="startup-number">${String(index + 1).padStart(2, '0')}</div>
                     <div class="startup-tag">${tag}</div>
                     <h3>${name}</h3>
+                    <div class="status-badge ${status.includes('ACTIVE') ? 'active' : 'exited'}">
+                        <i class="fas ${status.includes('ACTIVE') ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                        ${status.includes('ACTIVE') ? 'Active' : 'Exited'}
+                    </div>
                     <p class="startup-desc">${description}</p>
                     <div style="display:flex; gap:15px; margin-top:15px; flex-wrap:wrap;">
                         <button class="btn btn-primary" style="padding: 10px 20px; font-size: 0.8rem;" onclick='showDetails(${recordStr})'>Details</button>

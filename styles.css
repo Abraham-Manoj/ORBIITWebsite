@@ -1380,13 +1380,21 @@ footer {
 
 /* Status coloring and Legend */
 .startup-card.status-active {
-    border-color: #28a745;
-    background: rgba(40, 167, 69, 0.05);
+    border-color: #28a745 !important;
+    background: rgba(40, 167, 69, 0.12) !important;
+}
+
+.startup-card.status-active:hover {
+    background: rgba(40, 167, 69, 0.2) !important;
 }
 
 .startup-card.status-exited {
-    border-color: #dc3545;
-    background: rgba(220, 53, 69, 0.05);
+    border-color: #dc3545 !important;
+    background: rgba(220, 53, 69, 0.12) !important;
+}
+
+.startup-card.status-exited:hover {
+    background: rgba(220, 53, 69, 0.2) !important;
 }
 
 .status-legend {
@@ -1424,4 +1432,34 @@ footer {
 
 .legend-box.exited {
     background-color: #dc3545;
+}
+
+/* Status Badge inside cards */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    width: fit-content;
+}
+
+.status-badge.active {
+    background: rgba(40, 167, 69, 0.1);
+    color: #218838;
+    border: 1px solid #28a745;
+}
+
+.status-badge.exited {
+    background: rgba(220, 53, 69, 0.1);
+    color: #c82333;
+    border: 1px solid #dc3545;
+}
+
+.status-badge i {
+    font-size: 0.8rem;
 }
