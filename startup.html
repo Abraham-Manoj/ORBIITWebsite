@@ -462,8 +462,11 @@
             container.innerHTML = '';
 
             records.forEach((fields, index) => {
-                // Mapping fields from the Excel sheet
-                const name = fields['START UP NAME'] || fields['Name'] || fields['StartupName'] || fields['Title'] || fields['NAME'];
+                // Mapping fields with even more fallbacks
+                const name = fields['START UP NAME'] || fields['Name'] || fields['StartupName'] || fields['Title'] || fields['NAME'] || fields['Startup'] || fields['startup'] || fields['Company'] || fields['COMPANY'];
+                
+                // Debug log to see what's being processed
+                if (index < 5) console.log('Processing startup:', name, fields);
 
                 // Skip header rows or placeholder entries
                 if (!name || name === 'START UP NAME' || name === 'Untitled Startup') return;
